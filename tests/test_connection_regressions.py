@@ -193,7 +193,7 @@ class RequestTests(unittest.TestCase):
             release.set()
             self.assertTrue(launch.result(3))
             self.assertEqual(listing.result(3), apps)
-        self.assertEqual(requests.count(get_topic(TOPIC_GET_APPS, self.tv.client_id)), 1)
+        self.assertEqual(requests.count(get_topic(TOPIC_GET_APPS, self.tv.client_id)), 2)
         self.assertIn(get_topic(TOPIC_LAUNCH_APP, self.tv.client_id), requests)
         self.assertTrue(self.tv.is_connected)
 
@@ -233,12 +233,6 @@ class RequestTests(unittest.TestCase):
             with self.assertRaises(AppListTimeoutError): self.tv.launch_app('Missing')
             self.tv._connected = False
             self.assertFalse(self.tv.launch_app('Missing'))
-
-    def test_disconnect_invalidates_app_cache(self):
-        self.tv._apps_cache = [{'name': 'Old'}]
-        self.tv._on_disconnect(self.tv._client, None, 0)
-        self.assertIsNone(self.tv._apps_cache)
-
 
 class TokenTests(unittest.TestCase):
     def test_optional_refresh_token_has_zero_expiry_without_crashing(self):

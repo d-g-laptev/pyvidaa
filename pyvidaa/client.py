@@ -210,8 +210,6 @@ class VidaaTV:
         self._operation_lock = threading.RLock()
         self._response_lock = threading.Lock()
         self._expected_response_topics = set()
-        self._apps_cache = None
-        self._apps_cache_until = 0.0
         self._auth_event = threading.Event()
         # Set when the TV confirms the PIN dialog is on screen, so pairing can
         # wait for that instead of assuming it worked.
@@ -666,7 +664,6 @@ class VidaaTV:
         self._client.loop_stop()
         self._client.disconnect()
         self._connected = False
-        self._apps_cache = None
 
     def _on_connect(self, client, userdata, flags, rc):
         """Handle connection callback."""
@@ -751,7 +748,6 @@ class VidaaTV:
         """Handle disconnection callback."""
         was_connected = self._connected
         self._connected = False
-        self._apps_cache = None
         self._state_event.clear()
         # Everything we knew was learned before the TV went away, so do not let
         # a reconnect resurrect a stale "on HDMI2". The same goes for what we
@@ -1594,17 +1590,12 @@ class VidaaTV:
     # Apps
     @_serialized
     def get_apps(self, timeout: float = 5.0) -> Optional[list]:
-        """Share a short-lived app list; keep one permanent MQTT dispatcher."""
+        """Request the current app list through the permanent MQTT dispatcher."""
         if not self._connected:
             return None
-        if self._apps_cache is not None and time.monotonic() < self._apps_cache_until:
-            return [dict(app) for app in self._apps_cache]
         apps = self._request(get_topic(TOPIC_GET_APPS, self.client_id), timeout=timeout)
         if not isinstance(apps, list) or not all(isinstance(app, dict) for app in apps):
             return None
-        if self._connected:
-            self._apps_cache = [dict(app) for app in apps]
-            self._apps_cache_until = time.monotonic() + 60
         return apps
 
     @_serialized
